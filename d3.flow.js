@@ -1,7 +1,7 @@
 (function() {
 
 d3.flow = function() {
-  var flow = {nodes:{}, links:{}, scales:{}};
+  var flow = {nodes:{}, links:{}, scales:{}, title:{}};
   var xScale = d3.scale.linear();
   var yScale = d3.scale.linear();
 
@@ -28,6 +28,12 @@ d3.flow = function() {
   flow.margin = function(_) {
     if (!arguments.length) return margin;
     margin = _; return flow;
+  };
+
+  var titleMargin = {top:3, right:5, bottom:5, left:5};
+  flow.titleMargin = function(_) {
+    if (!arguments.length) return titleMargin;
+    titleMargin = _; return flow;
   };
 
   var nodeWidth = 120;
@@ -129,6 +135,14 @@ d3.flow = function() {
     selection
       .attr("d", flow.link())
       .style("stroke-width", function(d) { return d.dy; });
+  }
+
+  flow.title.position = function(selection) {
+    selection
+      .attr("x", function(d) { return d.x + titleMargin.left })
+      .attr("y", function(d) { return d.y + titleMargin.top + (d.height > 20 ? 0 : d.height) })
+      .attr("width", function(d) { return d.width - titleMargin.left - titleMargin.right })
+      .attr("height", function(d) { return d.height - titleMargin.top - titleMargin.bottom })
   }
 
   //------------------------------------
