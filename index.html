@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>d3.flow.js</title>
+  <link href="d3.flow.css" media="screen" rel="stylesheet" type="text/css" />
+  <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+  <script src="http://d3js.org/d3.v3.js"></script>
+  <script src="d3.flow.js"></script>
+  <script src="data.js"></script>
+  <style>
+    #chart svg {
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="chart"></div>
+
+  <script>
+    $(window).resize(function() {
+      update();
+    });
+
+    // Setup the flow.
+    var data = __data__[0];
+    var flow = d3.flow();
+    var color = d3.scale.category20();
+    var flag = false;
+    
+    // Create SVG and layout everything.
+    var svg = d3.select("#chart").append("svg");
+    var g = svg.append("g");
+
+    // Update the display with the current data.
+    function update() {
+      //flow.width($(this).width()-20).height($(this).height()-20)
+
+      // Layout data.
+      flow.layout(data.nodes, data.links);
+
+      // Update SVG container.
+      var margin = flow.margin();
+      svg.attr("width", flow.width()).attr("height", flow.height());
+      g.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    
+      // Layout links.
+      g.selectAll(".link").data(data.links, function(d) { return d.source.id + "-" + d.target.id; })
+        .call(function(link) {
+          var i = 0;
+          var enter = link.enter(), exit = link.exit();
+          link.transition().call(flow.links.position);
+          enter.append("path").attr("class", "link")
+            .call(flow.links.position)
+            .each(function(path) {
+              var totalLength = this.getTotalLength();
+              d3.select(this)
+                .attr("stroke-dasharray", totalLength + " " + totalLength)
+                .attr("stroke-dashoffset", totalLength)
+                .transition()
+                  .delay(function(d) { return 250 + ((i++)*100)})
+                  .duration(250)
+                  .ease("linear")
+                  .attr("stroke-dashoffset", 0);
+            });
+          exit.remove();
+        });
+
+      // Layout nodes.
+      var i=0;
+      var node = g.selectAll(".node").data(data.nodes, function(d) { return d.id });
+      node.transition().call(flow.nodes.position);
+      node.enter().append("rect").attr("class", "node")
+        .style("fill", function(d) { return color(d.id) })
+        .style("fill-opacity", 0)
+        .style("stroke", function(d) { return d3.rgb(color(d.id)).darker(2); })
+        .style("stroke-opacity", 0)
+        .call(flow.nodes.position)
+        .on("click", function(d) {
+          if(__data__[d.id]) {
+            data = __data__[d.id];
+            update();
+          }
+        })
+        .transition().delay(function(d) { return 600 + ((i++)*100)})
+          .style("fill-opacity", 1)
+          .style("stroke-opacity", 1)
+      node.exit().remove();
+    }
+    
+    update();
+
+  </script>
+</body>
+</html>
