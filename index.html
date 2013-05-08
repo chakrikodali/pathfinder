@@ -34,11 +34,31 @@
     $(window).resize(function() {
       update();
     });
+    var easingType = "quad-in";
+    var darkColors = ["#000", "#1f77b4"];
+    var colors = d3.scale.category20();
+    function nodeTextColor(node) {
+      if(node.height <= 20) return "#000";
+      var fillColor = nodeFillColor(node);
+      return (darkColors.indexOf(fillColor) != -1 ? "#f2f2f2" : "#000");
+    }
 
+    function nodeFillColor(node) {
+      var color;
+      switch(node.type) {
+        case "other": color = "lightgray"; break;
+        default: color = colors(node.expressionValue);
+      }
+      return color;
+    }
+
+    function nodeDelay(node) {
+      return 500 + (node.index*100);
+    }
     // Setup the flow.
     var data = __data__[0];
     var flow = d3.flow();
-    var color = d3.scale.category20();
+    
     var flag = false;
     
     // Create SVG and layout everything.
@@ -82,8 +102,46 @@
       // Layout nodes.
       var i=0;
       var node = g.selectAll(".node").data(data.nodes, function(d) { return d.id });
+     
       node.transition().call(flow.nodes.position);
-      node.enter().append("rect").attr("class", "node")
+
+      var t = g.selectAll(".title").data(data.nodes, function(d) { return d.id })
+        .transition().ease(easingType)
+        .call(flow.title.position)
+        .style("fill", nodeTextColor)
+        .style("fill-opacity", 1);
+
+      var sub_g = node.enter().append("g").attr("class", "node");
+        /*.on("click", node_onClick)
+        .on("mouseover", node_onMouseOver);*/
+      var rect = sub_g.append("rect");
+      rect.style("fill", function(d) { return colors(d.id);})
+        .style("fill-opacity", function(d) { return (d.depth == 0 ? 1 : 0); })
+        .style("stroke", function(d) { return d3.rgb(colors(d.id)).darker(2); })
+        .style("stroke-opacity", function(d) { return (d.depth == 0 ? 1 : 0); })
+        .call(flow.nodes.position)
+        .on("click", function(d) {
+          if(__data__[d.id]) {
+            data = __data__[d.id];
+            update();
+          }
+        })
+        .transition().ease(easingType).delay(nodeDelay)
+          .style("fill-opacity", 1)
+          .style("stroke-opacity", 1)
+      var title = sub_g.append("text")
+        .attr("class", "title")
+        .attr("dy", "1em")
+        .style("fill", nodeTextColor)
+        .style("fill-opacity", function(d) { return (d.depth == 0 ? 1 : 0); })
+        .call(flow.title.position)
+        .text(function(d) { return d.name; })
+        .transition().ease(easingType).delay(nodeDelay)
+          .style("fill-opacity", 1)
+
+
+
+     /* node.enter().append("rect").attr("class", "node")
         .style("fill", function(d) { return color(d.id) })
         .style("fill-opacity", 0)
         .style("stroke", function(d) { return d3.rgb(color(d.id)).darker(2); })
@@ -97,8 +155,9 @@
         })
         .transition().delay(function(d) { return 600 + ((i++)*100)})
           .style("fill-opacity", 1)
-          .style("stroke-opacity", 1)
+          .style("stroke-opacity", 1);*/
       node.exit().remove();
+
     }
     
     update();
