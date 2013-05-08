@@ -128,10 +128,8 @@
         .style("stroke-opacity", function(d) { return (d.depth == 0 ? 1 : 0); })
         .call(flow.nodes.position)
         .on("click", function(d) {
-          if(__data__[d.id]) {
-            data = __data__[d.id];
-            update();
-          }
+
+          makeAjax(d.id, d.depth, d.value);
         })
         .attr("y", function(d) { return d.y })
         .attr("width", function(d) { return d.width })
@@ -144,12 +142,11 @@
       var title = sub_g.append("text")
         .attr("class", "title")
         .attr("dy", "1em")
-        .style("fill", nodeTextColor)
-        .style("fill-opacity", function(d) { return (d.depth == 0 ? 1 : 0); })
+        .style("fill", 'black')
+        .style("stroke", 'black')
         .call(flow.title.position)
         .text(function(d) { return d.name; })
-        .transition().ease(easingType).delay(nodeDelay)
-          .style("fill-opacity", 1)
+        .transition().ease(easingType).delay(nodeDelay);
 
 
 
@@ -192,14 +189,11 @@
     }
 
     function constructData(eventData, parentId, parentDepth, parentCount) {
-      //TODO: clear old nodes when user click
+      var levelTotalCount = 0;
 
       if (parentDepth >= 0) {
         clearLinksAndNodes(parentDepth);
       } 
-
-      var levelTotalCount = 0;
-      //Find parent  count 
 
       //hack to remove the link for source 0 && target 1;
       if (parentId !== 0) {
@@ -217,7 +211,7 @@
         constructNodes(eventData[i]);
         constructLinks(eventData[i]);
       }
-      if (parentCount !== levelTotalCount) {
+      if (parentCount > 0 && parentCount !== levelTotalCount) {
         constructSessionEndedNodes(parentCount - levelTotalCount);
       }
 
