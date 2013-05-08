@@ -103,7 +103,13 @@
       var i=0;
       var node = g.selectAll(".node").data(data.nodes, function(d) { return d.id });
      
-      node.transition().call(flow.nodes.position);
+      //node.transition().call(flow.nodes.position);
+      g.selectAll("rect").data(data.nodes, function(d) { return d.id })
+        .transition().ease(easingType)
+          .call(flow.nodes.position)
+          .style("fill", function(d) { return colors(d.id);})
+          .style("fill-opacity", 1)
+          .style("stroke-opacity", 1);
 
       var t = g.selectAll(".title").data(data.nodes, function(d) { return d.id })
         .transition().ease(easingType)
@@ -111,9 +117,9 @@
         .style("fill", nodeTextColor)
         .style("fill-opacity", 1);
 
-      var sub_g = node.enter().append("g").attr("class", "node");
-        /*.on("click", node_onClick)
-        .on("mouseover", node_onMouseOver);*/
+      var sub_g = node.enter().append("g").attr("class", "node");//.call(flow.nodes.position);
+        //.on("click", node_onClick)
+        //.on("mouseover", node_onMouseOver);
       var rect = sub_g.append("rect");
       rect.style("fill", function(d) { return colors(d.id);})
         .style("fill-opacity", function(d) { return (d.depth == 0 ? 1 : 0); })
@@ -126,9 +132,14 @@
             update();
           }
         })
+        .attr("y", function(d) { return d.y })
+        .attr("width", function(d) { return d.width })
+        .attr("height", function(d) { return d.height })
         .transition().ease(easingType).delay(nodeDelay)
           .style("fill-opacity", 1)
-          .style("stroke-opacity", 1)
+          .style("stroke-opacity", 1);
+        //.call(flow.nodes.position)
+      
       var title = sub_g.append("text")
         .attr("class", "title")
         .attr("dy", "1em")
