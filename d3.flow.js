@@ -12,13 +12,13 @@ d3.flow = function() {
   //
   //----------------------------------------------------------------------------
 
-  var width = 600;
+  var width = $(window).width();
   flow.width = function(_) {
     if (!arguments.length) return width;
     width = _; return flow;
   };
 
-  var height = 300;
+  var height = $(window).height();
   flow.height = function(_) {
     if (!arguments.length) return height;
     height = _; return flow;

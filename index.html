@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8">
   <title>d3.flow.js</title>
-  <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
-  <script src="http://d3js.org/d3.v3.js"></script>
+  <script src="jquery-1.9.1.min.js"></script>
+  <script src="d3.v3.js"></script>
   <script src="d3.flow.js"></script>
   <script src="data.js"></script>
+  <script src="underscore.js"></script>
   <style>
 
 .node {
@@ -36,7 +37,7 @@
     });
 
     // Setup the flow.
-    var data = __data__[0];
+    var defaultData = { nodes: [], links: []};
     var flow = d3.flow();
     var color = d3.scale.category20();
     var flag = false;
@@ -90,18 +91,133 @@
         .style("stroke-opacity", 0)
         .call(flow.nodes.position)
         .on("click", function(d) {
-          if(__data__[d.id]) {
-            data = __data__[d.id];
-            update();
-          }
+          makeAjax(d.id, d.depth, d.value);
         })
         .transition().delay(function(d) { return 600 + ((i++)*100)})
           .style("fill-opacity", 1)
           .style("stroke-opacity", 1)
       node.exit().remove();
     }
-    
-    update();
+
+
+    //TODO: delete this
+    // var data = __data__[0];
+    // update();
+    makeAjax(0, -1, -1);
+
+    function makeAjax(parentId, parentDepth, parentCount) {
+      // $.ajax({
+      //   url: '/getActionItems?parentId='+ parentId,
+      //   success: function(data) {
+      //     constructData(data, parentId);
+      //     update();
+      //   },
+      //   error: function() {
+      //     console.log('error');
+      //   }
+      // });
+
+      constructData(__testData__[parentId], parentId, parentDepth, parentCount);
+      update();
+    }
+
+    function constructData(eventData, parentId, parentDepth, parentCount) {
+      //TODO: clear old nodes when user click
+
+      if (parentDepth >= 0) {
+        clearLinksAndNodes(parentDepth);
+      } 
+
+      var levelTotalCount = 0;
+      //Find parent  count 
+
+      //hack to remove the link for source 0 && target 1;
+      if (parentId !== 0) {
+        var defaultLinks = defaultData.links, parsedLinks = [];
+        for (var j = 0; j < defaultLinks.length; j++) {
+          if (defaultLinks[j].source !== 0 && defaultLinks[j].target !== 1) {
+            parsedLinks.push(defaultLinks[j]);
+          }
+        }
+        defaultData.links = parsedLinks;
+      };
+
+
+      for (var i = 0; i < eventData.length; i++) {
+        constructNodes(eventData[i]);
+        constructLinks(eventData[i]);
+      }
+      if (parentCount !== levelTotalCount) {
+        constructSessionEndedNodes(parentCount - levelTotalCount);
+      }
+
+
+      function constructNodes(event) {
+        var node = {};
+        node.id = event.id;
+        node.name = event.action + ':' + event.count;
+        node.depth = event.relSeq;
+
+        defaultData.nodes.push(node);
+
+        levelTotalCount += event.count;
+      }
+
+      function constructLinks(event) {
+        var link = {};
+        link.source = event.parentId > 0 ? event.parentId  : 0;
+        link.target = event.id;
+        link.value = event.count;
+
+        defaultData.links.push(link);
+      }
+
+      function constructSessionEndedNodes(missingCount) {
+        var sessionEndedEvent = {id: 'sessionEnded_' + parentId, relSeq: parentDepth + 1, parentId : parentId, action: 'sessionEnded', count: missingCount };
+        constructNodes(sessionEndedEvent);
+        constructLinks(sessionEndedEvent);
+      }
+
+      function clearLinksAndNodes(parentDepth) {
+        var newLinks = [], newNodes = [];
+        _.each(defaultData.nodes, function(node) {
+          if (node.depth <= parentDepth) {
+            newNodes.push(node);
+          }
+        });
+        defaultData.nodes = newNodes;
+
+        var existingNodeIds = _.pluck(defaultData.nodes, 'id');
+        _.each(defaultData.links, function(link) {
+          if (_.contains(existingNodeIds, link.target) && _.contains(existingNodeIds, link.source)) {
+            newLinks.push(link);  
+          }
+        });
+
+        defaultData.links = newLinks;
+      } 
+
+      console.log(defaultData);
+      window.data = $.extend(true, {}, defaultData);
+
+      // ___data___[0] = {
+      //   nodes: [
+      //     {"id":0, "name":"L0.0", "depth":0}
+      //   ],
+      //   links: [
+      //     {"source":0, "target":1, "value":30},
+      //     {"source":0, "target":2, "value":20},
+      //     {"source":0, "target":3, "value":10}
+      //   ]
+      // }
+
+      // var __testData__ = {
+      //   0: [{id: 1, relSeq: 0, parentId: -1, action:'impression', count 1000}],
+      //   1: [{id: 2, relSeq: 1,  parentId: 1, action: 'tab click', count: 250}, {id: 3, relSeq: 2 parentId: 1, action: 'video play', count: 250}],
+      //   2: [{id: 4, relSeq: 3,  parentId: 2, action: 'Scroll', count: 300}, {id: 5, relSeq: 4 parentId: 2, action: 'clickthrough', count: 100}]
+      // };
+
+    };
 
   </script>
 </body>
